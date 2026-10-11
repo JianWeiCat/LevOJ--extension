@@ -1,0 +1,10 @@
+# 本地工具配置（不随仓库分发）
+.claude/
+
+# 面向新手的说明文档：本地保留，不上传
+使用说明.html
+
+# 系统杂项
+Thumbs.db
+desktop.ini
+.DS_Store

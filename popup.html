@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      width: 340px; margin: 0; padding: 16px;
+      font: 13px/1.65 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #1b1d24, #14151a 120px); color: #e8eaf0;
+    }
+    .hd { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .logo {
+      width: 30px; height: 30px; border-radius: 9px; flex: none;
+      background: linear-gradient(160deg, #6b85ff, #4d6bfe);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(77,107,254,.45);
+    }
+    .logo svg { width: 17px; height: 17px; display: block; }
+    h1 { font-size: 14px; margin: 0; }
+    .sub { color: #6b7280; font-size: 11px; margin: 0 0 12px 40px; }
+    label { display: block; font: 600 11px inherit; color: #9aa2b1; margin: 10px 0 3px; letter-spacing: .3px; }
+    input {
+      width: 100%; box-sizing: border-box; background: #1b1d24; color: #e8eaf0;
+      border: 1px solid #2b2f3a; border-radius: 10px; padding: 8px 11px; font-size: 12.5px;
+      outline: none; transition: border-color .15s;
+    }
+    input:focus { border-color: #4d6bfe; }
+    .chk {
+      display: flex; align-items: center; gap: 8px; margin-top: 13px;
+      font: 500 12px inherit; color: #9aa2b1; cursor: pointer; user-select: none;
+    }
+    .chk input { width: 15px; height: 15px; margin: 0; padding: 0; flex: none; accent-color: #4d6bfe; cursor: pointer; }
+    .row { display: flex; gap: 8px; margin-top: 14px; }
+    button {
+      flex: 1; border: 1px solid #2b2f3a; background: #22252e; color: #e8eaf0;
+      border-radius: 10px; padding: 8px 0; font: 600 12.5px inherit; cursor: pointer; transition: all .15s;
+    }
+    button.pri { background: linear-gradient(160deg, #5b78ff, #4d6bfe); border: none; color: #fff; box-shadow: 0 4px 14px rgba(77,107,254,.35); }
+    button:hover { transform: translateY(-1px); }
+    #status {
+      margin-top: 12px; padding: 9px 11px; border-radius: 10px; font-size: 12px;
+      background: #1b1d24; border: 1px solid #2b2f3a; color: #9aa2b1; word-break: break-all; min-height: 18px;
+    }
+    .ok { color: #34d399 !important; border-color: rgba(52,211,153,.3) !important; }
+    .err { color: #f87171 !important; border-color: rgba(248,113,113,.3) !important; }
+    .tip { margin-top: 12px; font-size: 11px; color: #6b7280; line-height: 1.7; }
+    .tip code { color: #9db4ff; }
+  </style>
+</head>
+<body>
+  <div class="hd">
+    <div class="logo"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12.4 8.6h1.9c4.6 0 8.3 3.7 8.3 8.3 0 .7-.6 1.3-1.3 1.3h-1.5c-.6 0-1.1.4-1.2 1-.6 3.2-3.4 5.6-6.7 5.6C8.3 24.8 5 21.5 5 17.4c0-4.9 3.3-8.8 7.4-8.8zM11 13.7a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/><path fill="currentColor" d="M22.4 13.1l4.9-4.1c.6-.5 1.5 0 1.5.8v6.2c0 .8-.9 1.3-1.5.8l-2.1-1.7-2.8-2z"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M10.4 7.4c0-1.4 1-2.6 2.3-2.9M13.7 6.7c.2-1.3 1.2-2.3 2.5-2.5"/></svg></div>
+    <h1>刷题助手 · 设置</h1>
+  </div>
+  <div class="sub">配置 OpenAI 兼容接口（与悬浮窗 ⚙ 面板同步）</div>
+
+  <label>API Base URL</label>
+  <input id="base" placeholder="https://api.openai.com/v1" />
+
+  <label>API Key</label>
+  <input id="key" type="password" placeholder="sk-..." />
+
+  <label>模型</label>
+  <input id="model" placeholder="gpt-4o-mini" />
+
+  <label class="chk"><input type="checkbox" id="auto" /><span>进入题目页自动出答案</span></label>
+
+  <div class="row">
+    <button id="test">测试连接</button>
+    <button id="save" class="pri">保存配置</button>
+  </div>
+
+  <div id="status">就绪。</div>
+
+  <div class="tip">Key 仅存本机浏览器扩展存储。可填 OpenAI 官方，或 DeepSeek（<code>https://api.deepseek.com/v1</code>）、通义、本地中转等任意兼容网关。配置也可直接在 OJ 页面的悬浮窗 ⚙ 里完成。</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

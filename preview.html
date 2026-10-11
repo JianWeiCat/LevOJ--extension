@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>悬浮窗 UI 预览（v1.2.2 深色精修）</title>
+<!--
+  仅为「看效果」用的静态预览，不参与扩展运行。
+  CSS 与 content.js 里的 CSS 保持一致（仅把 :host 换成 :root、把固定定位改为静态以便并排展示）。
+  改完 content.js 的样式后，把下面的 <style> 同步过来即可。
+-->
+<style>
+  body {
+    margin: 0; padding: 32px 24px 48px;
+    background: radial-gradient(1200px 600px at 50% -10%, #191c26, #0a0b0f 70%);
+    min-height: 100vh; color: #e7eaf3;
+    font: 13px/1.6 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  .page-title { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
+  .page-sub { color: #616a7d; font-size: 12px; margin: 0 0 24px; }
+  .stage { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .stage > div { }
+  .cap { color: #616a7d; font-size: 11.5px; margin: 10px 0 0; letter-spacing: .3px; }
+
+  /* ===== 以下为 content.js 的 CSS（:host → :root） ===== */
+  :root {
+    --bg: #0e0f14; --bg2: #16181f; --bg3: #1e212b;
+    --line: #262a36; --line2: #333849;
+    --tx: #e7eaf3; --tx2: #97a0b2; --tx3: #616a7d;
+    --acc: #4d6bfe; --acc2: #6b85ff; --ok: #34d399; --warn: #fbbf24; --err: #f87171;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  .win {
+    position: static; width: 400px; max-height: 78vh;
+    display: flex; flex-direction: column;
+    background: var(--bg2);
+    color: var(--tx); border-radius: 14px; border: 1px solid var(--line);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 18px 44px rgba(0,0,0,.55);
+    font: 13px/1.6 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+  }
+  .hd {
+    position: relative; display: flex; align-items: center; gap: 9px; padding: 9px 10px 9px 12px;
+    background: linear-gradient(180deg, rgba(77,107,254,.12), rgba(77,107,254,0));
+    border-bottom: 1px solid var(--line); cursor: move; user-select: none; flex: none;
+  }
+  .hd::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(107,133,255,.55), transparent);
+  }
+  .hd .logo svg { width: 15px; height: 15px; display: block; }
+  .hd .logo {
+    width: 24px; height: 24px; border-radius: 7px; flex: none;
+    background: linear-gradient(135deg, var(--acc), var(--acc2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11.5px; font-weight: 700; color: #fff; letter-spacing: .2px;
+  }
+  .hd .name { font-weight: 600; font-size: 13px; flex: 1; letter-spacing: .2px; }
+  .hd .name small { display: block; font-weight: 400; font-size: 10px; color: var(--tx3); letter-spacing: 0; margin-top: 1px; }
+  .st { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
+  .st.off { background: var(--warn); }
+  .ib {
+    width: 24px; height: 24px; border-radius: 7px; flex: none; cursor: pointer;
+    border: 1px solid transparent; background: transparent; color: var(--tx2);
+    font-size: 12px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .ib:hover { background: var(--bg3); color: var(--tx); border-color: var(--line2); }
+  .ib.on { background: var(--acc); color: #fff; border-color: transparent; }
+
+  .bd { padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .bd::-webkit-scrollbar, .pv::-webkit-scrollbar, .md-pre::-webkit-scrollbar { width: 8px; }
+  .bd::-webkit-scrollbar-thumb, .pv::-webkit-scrollbar-thumb, .md-pre::-webkit-scrollbar-thumb { background: #2e3341; border-radius: 4px; }
+  .bd::-webkit-scrollbar-thumb:hover, .pv::-webkit-scrollbar-thumb:hover, .md-pre::-webkit-scrollbar-thumb:hover { background: #3a4050; }
+  .bd::-webkit-scrollbar-track, .pv::-webkit-scrollbar-track { background: transparent; }
+
+  .lockbar {
+    display: none; padding: 8px 11px; border-radius: 9px; font-size: 12px; line-height: 1.55;
+    background: rgba(251,191,36,.07); border: 1px solid rgba(251,191,36,.3); color: var(--warn);
+  }
+
+  .pcard {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 9px 11px; cursor: pointer; transition: border-color .15s;
+  }
+  .pcard:hover { border-color: var(--line2); }
+  .pcard .pt { display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 12.5px; }
+  .pcard .pt .chev { margin-left: auto; color: var(--tx3); font-size: 9px; transition: transform .2s; }
+  .pcard.open .pt .chev { transform: rotate(90deg); }
+  .pv {
+    display: none; margin-top: 8px; max-height: 170px; overflow-y: auto;
+    font-size: 12px; color: var(--tx2); white-space: pre-wrap; word-break: break-word;
+    border-top: 1px dashed var(--line2); padding-top: 8px;
+  }
+  .pcard.open .pv { display: block; }
+
+  .acts { display: flex; gap: 8px; }
+  .btn {
+    border: 1px solid var(--line2); background: var(--bg3); color: var(--tx);
+    border-radius: 9px; padding: 8px 13px; font: 600 12.5px inherit; cursor: pointer;
+    transition: background .15s, border-color .15s, opacity .15s; letter-spacing: .2px;
+  }
+  .btn:hover { background: #262a36; border-color: #3d4354; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.pri {
+    flex: 1; background: linear-gradient(180deg, #5b78ff, #3f61f8); border: 1px solid transparent;
+    color: #fff;
+  }
+  .btn.pri:hover { background: linear-gradient(180deg, #6b85ff, #4d6bfe); }
+
+  .out {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+    padding: 11px 12px; min-height: 88px; max-height: 46vh; overflow-y: auto; word-break: break-word;
+    font-size: 12.5px; line-height: 1.7;
+  }
+  .out .ph { color: var(--tx3); font-size: 12.5px; }
+  .md-h { font-weight: 700; font-size: 13px; margin: 11px 0 5px; color: #c3cfff; }
+  .md-h2 { font-size: 14px; }
+  .md-h:first-child { margin-top: 0; }
+  .md-li { display: flex; gap: 7px; margin: 4px 0; }
+  .md-bullet { width: 4px; height: 4px; border-radius: 50%; background: var(--acc); margin-top: 9px; flex: none; }
+  .md-gap { height: 7px; }
+  .md-ic {
+    background: var(--bg3); border: 1px solid var(--line); border-radius: 5px;
+    padding: 1px 5px; font: 11.5px Consolas, monospace; color: #9db4ff;
+  }
+  .md-cw { margin: 9px 0; border-radius: 9px; overflow: hidden; border: 1px solid var(--line); }
+  .md-cbar { display: flex; align-items: center; justify-content: space-between; background: #12141b; padding: 5px 10px; border-bottom: 1px solid var(--line); }
+  .md-lang { font: 600 10px inherit; color: var(--tx3); text-transform: uppercase; letter-spacing: .9px; }
+  .md-copy { border: 1px solid var(--line2); background: transparent; color: var(--tx2); border-radius: 6px; font: 500 11px inherit; padding: 2px 10px; cursor: pointer; transition: color .15s, border-color .15s; }
+  .md-copy:hover { color: #fff; border-color: var(--acc); }
+  .md-pre { margin: 0; padding: 11px 12px; overflow-x: auto; background: #0b0d12; color: #d5dae6; font: 12px/1.65 Consolas, "JetBrains Mono", monospace; }
+
+  .cfg { display: none; flex-direction: column; gap: 4px; }
+  .cfg.open { display: flex; }
+  .cfg label { font: 600 11px inherit; color: var(--tx2); margin: 5px 0 2px; letter-spacing: .3px; }
+  .cfg input {
+    width: 100%; background: var(--bg); color: var(--tx); border: 1px solid var(--line);
+    border-radius: 9px; padding: 8px 11px; font: 12.5px inherit; outline: none; transition: border-color .15s;
+  }
+  .cfg input:focus { border-color: var(--acc); }
+  .cfg label.chk {
+    display: flex; align-items: center; gap: 8px; margin: 9px 0 2px;
+    font: 500 12px inherit; color: var(--tx2); letter-spacing: 0; cursor: pointer; user-select: none;
+  }
+  .cfg label.chk input { width: 15px; height: 15px; flex: none; margin: 0; padding: 0; accent-color: var(--acc); cursor: pointer; }
+  .cfg .tip { font-size: 11px; color: var(--tx3); line-height: 1.7; margin-top: 4px; }
+  .cfg .tip code { color: #9db4ff; }
+  .cfgst { font-size: 12px; padding: 8px 11px; border-radius: 9px; display: none; line-height: 1.6; word-break: break-all; }
+  .cfgst.ok { display: block; background: rgba(52,211,153,.08); border: 1px solid rgba(52,211,153,.3); color: var(--ok); }
+  .cfgst.err { display: block; background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.3); color: var(--err); }
+
+  .ball {
+    position: static; width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(160deg, #6b85ff, #4d6bfe); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; user-select: none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 8px 22px rgba(77,107,254,.45);
+  }
+  .ball svg { width: 27px; height: 27px; display: block; }
+  .ball.locked { background: linear-gradient(160deg, #b45309, #b3261e); box-shadow: 0 8px 22px rgba(179,38,30,.35); }
+
+  .spin {
+    display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 7px;
+    border: 2px solid rgba(107,133,255,.25); border-top-color: var(--acc2); border-radius: 50%;
+    animation: sp .7s linear infinite;
+  }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  /* 预览专属：把两份面板并排摆开 */
+  .preview-override { }
+</style>
+</head>
+<body>
+  <p class="page-title">悬浮窗 UI 预览 · v1.2.2 深色精修</p>
+  <p class="page-sub">静态预览，仅用于看样式，不参与扩展运行。左：出答案后的主界面　中：⚙ 设置面板　右：折叠球</p>
+
+  <div class="stage">
+
+    <!-- ① 主界面：⚡ 答案 模式，已出结果 -->
+    <div>
+      <div class="win">
+        <div class="hd">
+          <div class="logo"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12.4 8.6h1.9c4.6 0 8.3 3.7 8.3 8.3 0 .7-.6 1.3-1.3 1.3h-1.5c-.6 0-1.1.4-1.2 1-.6 3.2-3.4 5.6-6.7 5.6C8.3 24.8 5 21.5 5 17.4c0-4.9 3.3-8.8 7.4-8.8zM11 13.7a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/><path fill="currentColor" d="M22.4 13.1l4.9-4.1c.6-.5 1.5 0 1.5.8v6.2c0 .8-.9 1.3-1.5.8l-2.1-1.7-2.8-2z"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M10.4 7.4c0-1.4 1-2.6 2.3-2.9M13.7 6.7c.2-1.3 1.2-2.3 2.5-2.5"/></svg></div>
+          <div class="name">刷题助手<small>LevOJ Practice Coach</small></div>
+          <span class="st"></span>
+          <button class="ib" title="AI 接口设置">⚙</button>
+          <button class="ib" title="折叠">—</button>
+        </div>
+        <div class="bd">
+          <div class="pcard open">
+            <div class="pt"><span style="color:var(--acc)">📄</span><span>#1024 两数之和</span><span class="chev">▶</span></div>
+            <div class="pv">给定 n，求 1 到 n 的和。输入一个整数 n（1 ≤ n ≤ 10^9），输出一个整数表示答案。</div>
+          </div>
+
+          <div class="acts">
+            <button class="btn pri">⚡ 一键出答案</button>
+          </div>
+
+          <div class="out">
+            <div class="md-gap"></div>
+            <div class="md-cw">
+              <div class="md-cbar"><span class="md-lang">cpp</span><button class="md-copy">复制</button></div>
+<pre class="md-pre">#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int main() {
+    long long n;
+    cin &gt;&gt; n;
+    cout &lt;&lt; n * (n + 1) / 2 &lt;&lt; endl;
+    return 0;
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="cap">① 主界面（答案模式）</p>
+    </div>
+
+    <!-- ② 设置面板展开 -->
+    <div>
+      <div class="win">
+        <div class="hd">
+          <div class="logo"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12.4 8.6h1.9c4.6 0 8.3 3.7 8.3 8.3 0 .7-.6 1.3-1.3 1.3h-1.5c-.6 0-1.1.4-1.2 1-.6 3.2-3.4 5.6-6.7 5.6C8.3 24.8 5 21.5 5 17.4c0-4.9 3.3-8.8 7.4-8.8zM11 13.7a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/><path fill="currentColor" d="M22.4 13.1l4.9-4.1c.6-.5 1.5 0 1.5.8v6.2c0 .8-.9 1.3-1.5.8l-2.1-1.7-2.8-2z"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M10.4 7.4c0-1.4 1-2.6 2.3-2.9M13.7 6.7c.2-1.3 1.2-2.3 2.5-2.5"/></svg></div>
+          <div class="name">刷题助手<small>LevOJ Practice Coach</small></div>
+          <span class="st"></span>
+          <button class="ib on" title="AI 接口设置">⚙</button>
+          <button class="ib" title="折叠">—</button>
+        </div>
+        <div class="bd">
+          <div class="cfg open">
+            <label>API Base URL（OpenAI 兼容）</label>
+            <input placeholder="https://api.openai.com/v1" value="https://api.deepseek.com/v1" />
+            <label>API Key</label>
+            <input type="password" placeholder="sk-..." />
+            <label>模型</label>
+            <input placeholder="gpt-4o-mini" value="deepseek-chat" />
+            <label class="chk"><input type="checkbox" checked /><span>进入题目页自动出答案</span></label>
+            <div class="acts" style="margin-top:8px">
+              <button class="btn">测试连接</button>
+              <button class="btn pri">保存配置</button>
+            </div>
+            <div class="cfgst ok" style="display:block">✅ 已保存：https://api.deepseek.com/v1 · deepseek-chat</div>
+            <div class="tip">Key 仅保存在本机浏览器扩展存储中。可填 OpenAI 官方，或 DeepSeek（<code>https://api.deepseek.com/v1</code>）、通义、本地中转等任意 OpenAI 兼容网关。</div>
+          </div>
+        </div>
+      </div>
+      <p class="cap">② ⚙ 设置面板（含自动出答案开关）</p>
+    </div>
+
+    <!-- ③ 折叠球 -->
+    <div>
+      <div class="ball"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12.4 8.6h1.9c4.6 0 8.3 3.7 8.3 8.3 0 .7-.6 1.3-1.3 1.3h-1.5c-.6 0-1.1.4-1.2 1-.6 3.2-3.4 5.6-6.7 5.6C8.3 24.8 5 21.5 5 17.4c0-4.9 3.3-8.8 7.4-8.8zM11 13.7a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/><path fill="currentColor" d="M22.4 13.1l4.9-4.1c.6-.5 1.5 0 1.5.8v6.2c0 .8-.9 1.3-1.5.8l-2.1-1.7-2.8-2z"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M10.4 7.4c0-1.4 1-2.6 2.3-2.9M13.7 6.7c.2-1.3 1.2-2.3 2.5-2.5"/></svg></div>
+      <div class="ball locked" style="margin-top:14px"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M12.4 8.6h1.9c4.6 0 8.3 3.7 8.3 8.3 0 .7-.6 1.3-1.3 1.3h-1.5c-.6 0-1.1.4-1.2 1-.6 3.2-3.4 5.6-6.7 5.6C8.3 24.8 5 21.5 5 17.4c0-4.9 3.3-8.8 7.4-8.8zM11 13.7a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/><path fill="currentColor" d="M22.4 13.1l4.9-4.1c.6-.5 1.5 0 1.5.8v6.2c0 .8-.9 1.3-1.5.8l-2.1-1.7-2.8-2z"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M10.4 7.4c0-1.4 1-2.6 2.3-2.9M13.7 6.7c.2-1.3 1.2-2.3 2.5-2.5"/></svg></div>
+      <p class="cap">③ 折叠球（上：正常　下：考试/比赛页锁定）</p>
+    </div>
+
+  </div>
+</body>
+</html>
